@@ -81,6 +81,14 @@ var ProteinViewer = function(width, height, DOMObj, sceneMinX, sceneMaxX, sceneM
 
 		this.updateCamera();
 	}
+	this.cameraZoom = function(zoom) {
+		this.camera.zoom *= zoom;
+		this.camera.updateProjectionMatrix();
+	}
+	this.cameraZoomTo = function(zoom) {
+		this.camera.zoom = zoom;
+		this.camera.updateProjectionMatrix();
+	}
 
 	// Lights
 	this.lights = [];
@@ -150,6 +158,8 @@ var ProteinViewer = function(width, height, DOMObj, sceneMinX, sceneMaxX, sceneM
 	this.renderer = renderer;
 	this.renderer.setSize(width, height);
 
+	this.zoomPos = 0;
+
 	// Canvas
 	DOMObj.appendChild(this.renderer.domElement);
 	// Canvas Drag
@@ -159,6 +169,8 @@ var ProteinViewer = function(width, height, DOMObj, sceneMinX, sceneMaxX, sceneM
 		var dragging;
 		var prevX, prevY;
 		theCanvas.addEventListener("mousedown", mouseDownListener, false);
+		theCanvas.addEventListener("mousewheel", mouseWheelListener.bind(this), false);
+		theCanvas.addEventListener("DOMMouseScroll", mouseWheelListener.bind(this), false);
 
 		function mouseDownListener(evt) {
 			dragging = true;
@@ -197,12 +209,20 @@ var ProteinViewer = function(width, height, DOMObj, sceneMinX, sceneMaxX, sceneM
 
 			ptViewer.sceneRotate(-dy / 100, -dx / 100);
 		}
+
+		function mouseWheelListener(evt) {
+			evt.preventDefault();
+			zoomSpeed = Math.sign(-evt.wheelDeltaY)/5;
+			this.camera.zoom = THREE.Math.clamp(Math.pow(Math.E, this.zoomPos+zoomSpeed), 1e-2, 1e3);
+			this.zoomPos = Math.log(this.camera.zoom);
+			this.camera.updateProjectionMatrix();
+		}
 	}
 	this.canvasApp(this);
 
 	// Render loop function
 	var render = function () {
-		requestAnimationFrame( render );
+		requestAnimationFrame(render);
 		//protein[0].rotation.x += 0.01;
 		renderer.render(scene, camera);
 	};
@@ -403,13 +423,13 @@ var ProteinViewer = function(width, height, DOMObj, sceneMinX, sceneMaxX, sceneM
 	data format:
 	{
 		"atoms":[
-			{"x" : -12.7110, "y" : -76.6390, "z" : 20.3000, "type" : 0, "ID" : "A44"},
-			{"x" : -14.6360, "y" : -73.3960, "z" : 19.7790, "type" : 0, "ID" : "A45"},
-			{"x" : -15.7110, "y" : -70.6390, "z" : 18.3000, "type" : 1, "ID" : "A46"},
-			{"x" : -16.6360, "y" : -68.3960, "z" : 17.7790, "type" : 1, "ID" : "A47"},
+			{"x" : -12.7110, "y" : -76.6390, "z" : 20.3000, "type" : 0, "chain": "A", "ID" : "A44"},
+			{"x" : -14.6360, "y" : -73.3960, "z" : 19.7790, "type" : 0, "chain": "A", "ID" : "A45"},
+			{"x" : -15.7110, "y" : -70.6390, "z" : 18.3000, "type" : 1, "chain": "A", "ID" : "A46"},
+			{"x" : -16.6360, "y" : -68.3960, "z" : 17.7790, "type" : 1, "chain": "A", "ID" : "A47"},
 			...
-			{"x" : -13.2180, "y" : -72.1640, "z" : 16.4780, "type" : 0, "ID" : "B46"},
-			{"x" : -14.7430, "y" : -69.8440, "z" : 13.8510, "type" : 0, "ID" : "B47"},
+			{"x" : -13.2180, "y" : -72.1640, "z" : 16.4780, "type" : 0, "chain": "B", "ID" : "B46"},
+			{"x" : -14.7430, "y" : -69.8440, "z" : 13.8510, "type" : 0, "chain": "B", "ID" : "B47"},
 			...
 		]
 	}
@@ -434,10 +454,10 @@ var ProteinViewerWrapper = function(width, height, DOMObj, data) {
 	center.scale(1.0 / data.length);
 	for (var i = 0; i < data.length; i++) {
 		var item = data[i];
-		var id = item['ID'][0];
-		var order = parseInt(item['ID'].substring(1));
-		if (id in this.proteinData) {
-			this.proteinData[id].push({
+		var chain = item['chain'];
+		var order = +item['ID'].substr(1);
+		if (chain in this.proteinData) {
+			this.proteinData[chain].push({
 				x : item['x'],
 				y : item['y'],
 				z : item['z'],
@@ -445,7 +465,7 @@ var ProteinViewerWrapper = function(width, height, DOMObj, data) {
 				order : order
 			});
 		} else {
-			this.proteinData[id] = [{
+			this.proteinData[chain] = [{
 				x : item['x'],
 				y : item['y'],
 				z : item['z'],
