@@ -455,14 +455,12 @@ var ProteinViewerWrapper = function(width, height, DOMObj, data) {
 	for (var i = 0; i < data.length; i++) {
 		var item = data[i];
 		var chain = item['chain'];
-		var order = +item['ID'].substr(1);
 		if (chain in this.proteinData) {
 			this.proteinData[chain].push({
 				x : item['x'],
 				y : item['y'],
 				z : item['z'],
 				type : item['type'],
-				order : order
 			});
 		} else {
 			this.proteinData[chain] = [{
@@ -470,22 +468,11 @@ var ProteinViewerWrapper = function(width, height, DOMObj, data) {
 				y : item['y'],
 				z : item['z'],
 				type : item['type'],
-				order : order
 			}];
 		}
 		if (Math.abs(item['x'] - center.x) > this.axisRange) this.axisRange = Math.abs(item['x'] - center.x);
 		if (Math.abs(item['y'] - center.y) > this.axisRange) this.axisRange = Math.abs(item['y'] - center.y);
 		if (Math.abs(item['z'] - center.z) > this.axisRange) this.axisRange = Math.abs(item['z'] - center.z);
-	}
-
-	function compare(a, b) {
-		if (a.order < b.order) {
-			return -1;
-		}
-		if (a.order > b.order) {
-			return 1;
-		}
-		return 0;
 	}
 
 	var xRange = this.axisRange * 2, yRange = this.axisRange * 2;
@@ -496,7 +483,6 @@ var ProteinViewerWrapper = function(width, height, DOMObj, data) {
 	this.proteinViewer.execute();
 	var count = 0;
 	for (var key in this.proteinData) {
-		this.proteinData[key].sort(compare);
 		this.proteinViewer.appendProtein(
 			-center.x, -center.y, -center.z, 
 			this.proteinData[key], this.theme[(count++) % this.theme.length],
